@@ -46,9 +46,12 @@ GROQ_API_KEY=your_groq_api_key_here
 
 ### 3. Get Your API Keys
 
-- **Gemini API Key** (Required): Get it from [Google AI Studio](https://makersuite.google.com/app/apikey)
-- **YouTube API Key** (Optional): Get it from [Google Cloud Console](https://console.developers.google.com/)
-- **Groq API Key** (Optional): Get it from [Groq Console](https://console.groq.com/)
+NEXT_PUBLIC_YOUTUBE_API_KEY=
+GROQ_API_KEY=
+MONGO_URI=
+CLERK_API_KEY=
+YOUTUBE_API_KEY=
+GEMINI_API_KEY=
 
 ### 4. Start Development Server
 
