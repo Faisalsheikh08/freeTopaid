@@ -126,15 +126,83 @@
 // }
 
 
-// app/api/get-transcript/route.ts
+// // app/api/get-transcript/route.ts
+// import { NextRequest, NextResponse } from 'next/server';
+// import { YoutubeTranscript } from 'youtube-transcript-plus';
+
+// export async function POST(request: NextRequest) {
+//   try {
+//     const { videoId, lang = 'en', country = 'US' } = await request.json();
+
+//     // Validate videoId
+//     if (!videoId || typeof videoId !== 'string') {
+//       return NextResponse.json(
+//         { success: false, error: 'Video ID is required and must be a string' },
+//         { status: 400 }
+//       );
+//     }
+
+//     console.log(`Fetching transcript for videoId: ${videoId}`);
+
+//     let transcript;
+//     try {
+//       // Fetch transcript from youtube-transcript-plus
+//       transcript = await YoutubeTranscript.fetchTranscript(videoId, {
+//         lang,
+//         country
+//       });
+//     } catch (fetchError) {
+//       console.error('Transcript fetch error:', fetchError);
+//       return NextResponse.json(
+//         { success: false, error: 'Transcript not available for this video' },
+//         { status: 404 }
+//       );
+//     }
+
+//     // If transcript is empty
+//     if (!transcript || transcript.length === 0) {
+//       return NextResponse.json(
+//         { success: false, error: 'No transcript found for this video' },
+//         { status: 404 }
+//       );
+//     }
+
+//     // Format transcript
+//     const formattedTranscript = transcript.map(item => ({
+//       text: item.text,
+//       duration: item.duration,
+//       offset: item.offset
+//     }));
+
+//     return NextResponse.json({
+//       success: true,
+//       transcript: formattedTranscript
+//     });
+
+//   } catch (error) {
+//     console.error('Unexpected error:', error);
+
+//     let errorMessage = 'Failed to fetch transcript';
+
+//     if (error instanceof Error) {
+//       errorMessage = error.message;
+//     }
+
+//     return NextResponse.json(
+//       { success: false, error: errorMessage },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
 import { NextRequest, NextResponse } from 'next/server';
 import { YoutubeTranscript } from 'youtube-transcript-plus';
 
 export async function POST(request: NextRequest) {
   try {
-    const { videoId, lang = 'en', country = 'US' } = await request.json();
+    const { videoId } = await request.json();
 
-    // Validate videoId
     if (!videoId || typeof videoId !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Video ID is required and must be a string' },
@@ -145,54 +213,48 @@ export async function POST(request: NextRequest) {
     console.log(`Fetching transcript for videoId: ${videoId}`);
 
     let transcript;
-    try {
-      // Fetch transcript from youtube-transcript-plus
-      transcript = await YoutubeTranscript.fetchTranscript(videoId, {
-        lang,
-        country
-      });
-    } catch (fetchError) {
-      console.error('Transcript fetch error:', fetchError);
-      return NextResponse.json(
-        { success: false, error: 'Transcript not available for this video' },
-        { status: 404 }
-      );
-    }
 
-    // If transcript is empty
-    if (!transcript || transcript.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'No transcript found for this video' },
-        { status: 404 }
-      );
+    // Try English first
+    try {
+      transcript = await YoutubeTranscript.fetchTranscript(videoId, {
+        lang: 'en',
+        country: 'US',
+      });
+    } catch (error) {
+      console.warn('English transcript not available, trying Hindi...', error);
+
+      // If English fails, try Hindi
+      try {
+        transcript = await YoutubeTranscript.fetchTranscript(videoId, {
+          lang: 'hi',
+          country: 'IN',
+        });
+      } catch (err) {
+        console.error('Transcript fetch error:', err);
+        return NextResponse.json(
+          { success: false, error: 'Transcript not available in English or Hindi' },
+          { status: 404 }
+        );
+      }
     }
 
     // Format transcript
     const formattedTranscript = transcript.map(item => ({
       text: item.text,
       duration: item.duration,
-      offset: item.offset
+      offset: item.offset,
     }));
 
     return NextResponse.json({
       success: true,
-      transcript: formattedTranscript
+      transcript: formattedTranscript,
     });
-
   } catch (error) {
     console.error('Unexpected error:', error);
 
-    let errorMessage = 'Failed to fetch transcript';
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch transcript' },
       { status: 500 }
     );
   }
 }
-
-
